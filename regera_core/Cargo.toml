@@ -1,0 +1,18 @@
+[package]
+name = "regera_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8"
+blake3 = "1"
+chacha20 = "0.9"
+zeroize = "1.8.1"
+poly1305 = "0.8"
+generic-array = "0.14.7"
+cipher = "0.4.4"
+hmac = "0.13.0-rc.0"
+aes-gcm = { version = "0.10", features = ["aes"] }
+tiny-keccak = { version = "2.0", features = ["kmac"] }
+ascon-aead = "0.5.1"
+subtle = "2.6.1"

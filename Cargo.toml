@@ -1,0 +1,23 @@
+[package]
+name = "regera"
+version = "0.1.0"
+edition = "2021"
+authors = ["Damon", "TITAN Softwork Solutions"]
+description = "Regera: Encrypted macro + runtime framework for compile-time string encryption"
+repository = "https://github.com/TITAN-Softwork-Solutions/Regera"
+readme = "README.md"
+keywords = ["crypto", "encryption", "macros", "framework"]
+categories = ["cryptography", "command-line-utilities"]
+license = "AGPL-3.0"
+license-file = "LICENSE"
+exclude = ["/target", "**/target", ".gitignore", ".vscode", ".github"]
+
+[dependencies]
+regera_core = { path = "./regera_core" }
+regera_macros = { path = "./regera_macros" }
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lib]
+path = "./lib.rs"
