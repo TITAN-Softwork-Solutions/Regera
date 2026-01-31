@@ -1,5 +1,7 @@
 # Regera
 
+[![Discord](https://img.shields.io/discord/1240608336005828668?label=TITAN%20Softworks&logo=discord&color=5865F2&style=flat)](https://titansoftwork.com)
+
 Compile-time string encryption for Rust.
 
 Regera turns string literals into encrypted blobs at build time and wires in tiny decrypt shims at runtime. Single-value macros return a zeroizing `SecretStr`; multi-value macros return owned `String`s for ergonomic destructuring.
