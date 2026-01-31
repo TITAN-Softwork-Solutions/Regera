@@ -6,6 +6,8 @@ Regera turns string literals into encrypted blobs at build time and wires in tin
 
 ---
 
+![Diagram](./regera_spec/diagram/REGERA_TH_BLACK.png)
+
 ## Features
 
 - **Compile-time encrypted literals** via proc macros (`jesko!`, `absolut!`, `sadair!`, `gamera!`).
