@@ -3,9 +3,15 @@ name = "regera_spec"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "regera"
+[[test]]
+name = "regera_spec"
 path = "integration/spec.rs"
 
 [dependencies]
-regera = { path = "../" }
+regera = { path = "../", default-features = false, features = ["std", "jesko", "absolut", "sadair", "gamera", "velar"] }
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+panic = "abort"
