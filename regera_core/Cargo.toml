@@ -3,16 +3,22 @@ name = "regera_core"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["std"]
+std = []
+leaky_reveal = []
+jesko = ["dep:rand", "dep:blake3", "dep:chacha20", "dep:subtle"]
+absolut = ["dep:rand", "dep:blake3", "dep:subtle", "dep:tiny-keccak", "dep:ascon-aead"]
+sadair = ["dep:rand", "dep:blake3", "dep:subtle", "dep:aes-gcm"]
+gamera = []
+velar = ["dep:rand", "dep:blake3", "dep:chacha20"]
+
 [dependencies]
-rand = "0.8"
-blake3 = "1"
-chacha20 = "0.9"
+rand = { version = "0.8", optional = true }
+blake3 = { version = "1", optional = true }
+chacha20 = { version = "0.9", optional = true }
 zeroize = "1.8.1"
-poly1305 = "0.8"
-generic-array = "0.14.7"
-cipher = "0.4.4"
-hmac = "0.13.0-rc.0"
-aes-gcm = { version = "0.10", features = ["aes"] }
-tiny-keccak = { version = "2.0", features = ["kmac"] }
-ascon-aead = "0.5.1"
-subtle = "2.6.1"
+aes-gcm = { version = "0.10", features = ["aes"], optional = true }
+tiny-keccak = { version = "2.0", features = ["kmac"], optional = true }
+ascon-aead = { version = "0.5.1", optional = true }
+subtle = { version = "2.6.1", optional = true }

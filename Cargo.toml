@@ -12,9 +12,22 @@ license = "AGPL-3.0"
 license-file = "LICENSE"
 exclude = ["/target", "**/target", ".gitignore", ".vscode", ".github"]
 
+[features]
+default = ["std", "jesko"]
+std = ["regera_core/std"]
+leaky_reveal = ["regera_core/leaky_reveal"]
+jesko = ["regera_core/jesko", "regera_macros/jesko"]
+absolut = ["regera_core/absolut", "regera_macros/absolut"]
+sadair = ["regera_core/sadair", "regera_macros/sadair"]
+gamera = ["regera_core/gamera", "regera_macros/gamera"]
+velar = ["regera_core/velar", "regera_macros/velar"]
+
 [dependencies]
-regera_core = { path = "./regera_core" }
+regera_core = { path = "./regera_core", default-features = false }
 regera_macros = { path = "./regera_macros" }
+
+[dev-dependencies]
+regera_core = { path = "./regera_core", default-features = false, features = ["std", "jesko", "absolut", "sadair", "gamera", "velar"] }
 
 [package.metadata.docs.rs]
 all-features = true
