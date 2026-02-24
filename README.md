@@ -1,8 +1,18 @@
-# Regera
+<h1 align="center">Regera</h1>
+<p align="center"><b>Compile-Time String Encryption for Rust</b></p>
 
-Compile-time string encryption for Rust with explicit engine feature flags.
+<p align="center">
+  <img src="https://img.shields.io/badge/Language-Rust-000000?logo=rust&logoColor=white&style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Category-Proc%20Macros-8A2BE2?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/License-AGPL--3.0-red?style=for-the-badge" />
+  <a href="https://titansoftwork.com">
+    <img src="https://img.shields.io/discord/1240608336005828668?label=TITAN%20Softworks&logo=discord&color=5865F2&style=for-the-badge" />
+  </a>
+</p>
 
-Regera encrypts string literals at build time and emits runtime decrypt shims. Single-value macros return a zeroizing `SecretStr`.
+<p align="center">
+Turns string literals into encrypted blobs at compile time and injects minimal decrypt shims at runtime.
+</p>
 
 ![Diagram](./regera_spec/diagram/REGERA_TH_BLACK.png)
 
