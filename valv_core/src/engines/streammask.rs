@@ -1,5 +1,5 @@
 #![doc = r#"
-# Velar Engine (lightweight)
+# Stream Mask Engine (lightweight)
 
 Pipeline:
 - 256-bit random build-time key
@@ -22,9 +22,9 @@ use zeroize::Zeroize;
 
 use crate::{Encryptor, SecretStr};
 
-pub struct Velar;
+pub struct StreamMask;
 
-impl Velar {
+impl StreamMask {
     #[inline(always)]
     fn derive_subkey(build_key: &[u8; 32], seed: u64) -> [u8; 32] {
         let mut h = B3Hasher::new();
@@ -47,12 +47,9 @@ impl Velar {
     }
 }
 
-impl Encryptor for Velar {
+impl Encryptor for StreamMask {
     #[inline(always)]
-    fn encrypt(
-        plain: &[u8],
-        seed: u64,
-    ) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
+    fn encrypt(plain: &[u8], seed: u64) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
         // Build-time random 256-bit key (proc-macro path calls this at compile time).
         let mut build_key = [0u8; 32];
         OsRng.fill_bytes(&mut build_key);
@@ -61,7 +58,7 @@ impl Encryptor for Velar {
         let mut ct = plain.to_vec();
         Self::apply_keystream(&mut ct, &subkey, seed);
 
-        // Return build key in the tag field (Velar has no MAC).
+        // Return build key in the tag field (StreamMask has no MAC).
         let tag = build_key;
 
         subkey.zeroize();
@@ -79,11 +76,9 @@ impl Encryptor for Velar {
     ) -> SecretStr {
         if tag.len() != 32 {
             #[cfg(debug_assertions)]
-            panic!("REGERA/VELAR: invalid key material");
+            panic!("VALV/STREAMMASK: invalid key material");
             #[cfg(not(debug_assertions))]
-            unsafe {
-                core::intrinsics::abort()
-            }
+            crate::abort_or_panic("VALV/STREAMMASK: invalid key material")
         }
 
         let mut build_key = [0u8; 32];
@@ -93,26 +88,26 @@ impl Encryptor for Velar {
         let mut pt = ct.to_vec();
         Self::apply_keystream(&mut pt, &subkey, seed);
 
-        // Explicit key hygiene requested for Velar.
+        // Explicit key hygiene requested for StreamMask.
         subkey.zeroize();
         build_key.zeroize();
 
-        SecretStr(String::from_utf8(pt).expect("Velar: invalid UTF-8"))
+        SecretStr(String::from_utf8(pt).expect("StreamMask: invalid UTF-8"))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Velar;
+    use super::StreamMask;
     use crate::Encryptor;
 
     #[test]
     fn roundtrip_recovers_plaintext() {
-        let plain = b"velar-roundtrip";
+        let plain = b"streammask-roundtrip";
         let seed = 0x1234_5678_90AB_CDEFu64;
 
-        let (ct, tag, frag, mask) = Velar::encrypt(plain, seed);
-        let pt = Velar::decrypt(&ct, &tag, frag, mask, seed);
+        let (ct, tag, frag, mask) = StreamMask::encrypt(plain, seed);
+        let pt = StreamMask::decrypt(&ct, &tag, frag, mask, seed);
 
         assert_eq!(pt.as_bytes(), plain);
     }
@@ -122,7 +117,7 @@ mod tests {
         let plain = b"shape-check";
         let seed = 0xCAFEBABE_DEADC0DEu64;
 
-        let (ct, tag, frag, mask) = Velar::encrypt(plain, seed);
+        let (ct, tag, frag, mask) = StreamMask::encrypt(plain, seed);
 
         assert_eq!(ct.len(), plain.len());
         assert_eq!(tag.len(), 32);
@@ -135,18 +130,18 @@ mod tests {
         let plain = b"same-input";
         let seed = 7u64;
 
-        let (ct1, tag1, _, _) = Velar::encrypt(plain, seed);
-        let (ct2, tag2, _, _) = Velar::encrypt(plain, seed);
+        let (ct1, tag1, _, _) = StreamMask::encrypt(plain, seed);
+        let (ct2, tag2, _, _) = StreamMask::encrypt(plain, seed);
 
         assert_ne!(tag1, tag2);
         assert_ne!(ct1, ct2);
     }
 
     #[test]
-    #[should_panic(expected = "REGERA/VELAR: invalid key material")]
+    #[should_panic(expected = "VALV/STREAMMASK: invalid key material")]
     fn decrypt_panics_on_invalid_tag_length() {
         let ct = [0u8; 4];
         let bad_tag = [0u8; 31];
-        let _ = Velar::decrypt(&ct, &bad_tag, [[0u8; 8]; 4], [[0u8; 8]; 4], 1);
+        let _ = StreamMask::decrypt(&ct, &bad_tag, [[0u8; 8]; 4], [[0u8; 8]; 4], 1);
     }
 }

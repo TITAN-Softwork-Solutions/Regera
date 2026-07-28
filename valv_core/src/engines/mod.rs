@@ -1,0 +1,10 @@
+#[cfg(feature = "aesgcm")]
+pub mod aesgcm;
+#[cfg(feature = "ascon")]
+pub mod ascon;
+#[cfg(feature = "chacha")]
+pub mod chacha;
+#[cfg(feature = "streammask")]
+pub mod streammask;
+#[cfg(feature = "xormask")]
+pub mod xormask;

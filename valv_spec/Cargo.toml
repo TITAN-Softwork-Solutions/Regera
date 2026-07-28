@@ -1,0 +1,11 @@
+[package]
+name = "valv_spec"
+version = "2.0.0"
+edition = "2024"
+
+[[test]]
+name = "valv_spec"
+path = "integration/spec.rs"
+
+[dependencies]
+valv = { path = "../", default-features = false, features = ["std", "chacha", "ascon", "aesgcm", "xormask", "streammask"] }

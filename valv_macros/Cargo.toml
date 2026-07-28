@@ -1,0 +1,32 @@
+[package]
+name = "valv_macros"
+version = "2.0.0"
+edition = "2021"
+rust-version = "1.81"
+authors = ["Damon", "TITAN Softwork Solutions"]
+description = "Proc macros for Valv compile-time string encryption"
+repository = "https://github.com/TITAN-Softwork-Solutions/Regera"
+license = "AGPL-3.0-only"
+keywords = ["proc-macro", "encryption", "strings"]
+categories = ["cryptography", "development-tools"]
+
+[lib]
+proc-macro = true
+
+[features]
+default = []
+deterministic = []
+runtime_bound = ["valv_core/runtime_bound"]
+chacha = ["valv_core/chacha"]
+ascon = ["valv_core/ascon"]
+aesgcm = ["valv_core/aesgcm"]
+xormask = ["valv_core/xormask"]
+streammask = ["valv_core/streammask"]
+
+[dependencies]
+valv_core = { version = "2.0.0", path = "../valv_core", default-features = false }
+proc-macro2 = "1"
+quote = "1"
+rand = "0.8"
+syn = "2.0.104"
+blake3 = "1.8.2"

@@ -1,11 +1,11 @@
 #![doc = r#"
-# Gamera Engine (no_std, deterministic)
+# XOR Mask Engine (no_std, deterministic)
 
-**Gamera** is a *non-cryptographic* obfuscator. It applies a reversible XOR
+**XorMask** is a *non-cryptographic* obfuscator. It applies a reversible XOR
 transform keyed by a 64-bit seed. No timing/CPU noise is used (determinism is
 required so decrypt can invert encrypt exactly).
 
-Implements the [`Encryptor`](crate::Encryptor) trait.
+Implements the [`Encryptor`] trait.
 "#]
 
 extern crate alloc;
@@ -15,16 +15,16 @@ use alloc::{string::String, vec, vec::Vec};
 use crate::{Encryptor, SecretStr};
 
 /// Non-cryptographic obfuscator (reversible XOR).
-pub struct Gamera;
+pub struct XorMask;
 
-impl Gamera {
+impl XorMask {
     /// Derive a per-index mask from the 64-bit seed and the byte index.
     /// Deterministic and cheap; XOR is its own inverse.
     #[inline(always)]
     fn mask_at(seed: u64, i: usize) -> u8 {
         let sb = seed.to_le_bytes();
         let base = sb[i & 7].rotate_left(((i as u32) % 7) + 1);
-        let idx  = (i as u8).wrapping_mul(0x0B);
+        let idx = (i as u8).wrapping_mul(0x0B);
         // small extra mixing from other seed bytes; still deterministic
         let kmix = sb[0] ^ sb[3] ^ sb[5] ^ sb[7] ^ 0xA7;
         base ^ idx ^ kmix.rotate_left((i % 5) as u32) ^ 0x3C
@@ -42,17 +42,18 @@ impl Gamera {
 
     /// Placeholder fragments/tag to satisfy `Encryptor`.
     #[inline(always)]
-    fn dummy_fragments() -> ([[u8; 8]; 4], [[u8; 8]; 4]) { ([[0u8; 8]; 4], [[0u8; 8]; 4]) }
+    fn dummy_fragments() -> ([[u8; 8]; 4], [[u8; 8]; 4]) {
+        ([[0u8; 8]; 4], [[0u8; 8]; 4])
+    }
     #[inline(always)]
-    fn dummy_tag() -> [u8; 32] { [0u8; 32] }
+    fn dummy_tag() -> [u8; 32] {
+        [0u8; 32]
+    }
 }
 
-impl Encryptor for Gamera {
+impl Encryptor for XorMask {
     #[inline(always)]
-    fn encrypt(
-        plain: &[u8],
-        seed: u64,
-    ) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
+    fn encrypt(plain: &[u8], seed: u64) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
         let ct = Self::transform(plain, seed);
         let (frag, mask) = Self::dummy_fragments();
         (ct, Self::dummy_tag(), frag, mask)
@@ -67,6 +68,6 @@ impl Encryptor for Gamera {
         seed: u64,
     ) -> SecretStr {
         let pt = Self::transform(ct, seed);
-        SecretStr(String::from_utf8(pt).expect("Gamera: invalid UTF-8"))
+        SecretStr(String::from_utf8(pt).expect("XorMask: invalid UTF-8"))
     }
 }

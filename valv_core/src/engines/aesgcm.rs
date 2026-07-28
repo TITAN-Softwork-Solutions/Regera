@@ -1,7 +1,7 @@
 #![doc = r#"
-# Sadair Engine (AES-256-GCM, hardened, no_std)
+# AES-GCM Engine (AES-256-GCM, hardened, no_std)
 
-- Ephemeral per-call master key (random spell → BLAKE3)
+- Ephemeral per-call master key (random spell -> BLAKE3)
 - Key split: ENC (32B) + MAC (32B via BLAKE3 domain separation)
 - Deterministic 96-bit nonce: BLAKE3(enc_key || seed_u64)[..12]
 - MAC (BLAKE3 keyed) over **raw GCM output** (ct||tag) before obfuscation
@@ -25,9 +25,9 @@ use zeroize::Zeroize;
 
 use crate::{Encryptor, SecretStr};
 
-pub struct Sadair;
+pub struct AesGcm;
 
-/// Fragment/mask a 32B master into 4×8B rows.
+/// Fragment/mask a 32B master into 4x8B rows.
 #[inline(always)]
 fn mask_key(master: &[u8; 32]) -> ([[u8; 8]; 4], [[u8; 8]; 4]) {
     let mut frag = [[0u8; 8]; 4];
@@ -52,7 +52,7 @@ fn unmask_key(frag: [[u8; 8]; 4], mask: [[u8; 8]; 4]) -> [u8; 32] {
     master
 }
 
-/// Random 64B → master (32B) via BLAKE3.
+/// Random 64B -> master (32B) via BLAKE3.
 #[inline(always)]
 fn derive_master(spell: &[u8; 64]) -> [u8; 32] {
     *bl3_hash(spell).as_bytes()
@@ -61,9 +61,9 @@ fn derive_master(spell: &[u8; 64]) -> [u8; 32] {
 /// Domain-separate keys.
 #[inline(always)]
 fn split_keys(master: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
-    // ENC key = BLAKE3 keyed(master, "REGERA/SADAIR/ENC")
-    let enc = blake3::keyed_hash(master, b"REGERA/SADAIR/ENC");
-    let mac = blake3::keyed_hash(master, b"REGERA/SADAIR/MAC");
+    // ENC key = BLAKE3 keyed(master, "VALV/AESGCM/ENC")
+    let enc = blake3::keyed_hash(master, b"VALV/AESGCM/ENC");
+    let mac = blake3::keyed_hash(master, b"VALV/AESGCM/MAC");
     (*enc.as_bytes(), *mac.as_bytes())
 }
 
@@ -93,9 +93,8 @@ fn post_mutate(buf: &mut [u8], seed: u64, enc_key: &[u8; 32]) {
     let kmix = enc_key[0] ^ enc_key[11] ^ enc_key[31];
     let s = seed.to_le_bytes();
     for (i, b) in buf.iter_mut().enumerate() {
-        let r = s[i & 7].rotate_left(((i as u32) % 7) + 1)
-            ^ kmix.rotate_left((i % 5) as u32)
-            ^ 0xB3;
+        let r =
+            s[i & 7].rotate_left(((i as u32) % 7) + 1) ^ kmix.rotate_left((i % 5) as u32) ^ 0xB3;
         *b ^= r;
     }
 }
@@ -108,33 +107,30 @@ fn post_unmutate(buf: &mut [u8], seed: u64, enc_key: &[u8; 32]) {
 #[inline(never)]
 fn die() -> ! {
     #[cfg(debug_assertions)]
-    panic!("REGERA/SADAIR: verification failed");
+    panic!("VALV/AESGCM: verification failed");
     #[cfg(not(debug_assertions))]
-    unsafe { core::intrinsics::abort() }
+    crate::abort_or_panic("VALV/AESGCM: verification failed")
 }
 
-impl Encryptor for Sadair {
+impl Encryptor for AesGcm {
     #[inline(always)]
-    fn encrypt(
-        plain: &[u8],
-        seed: u64,
-    ) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
-        // Random spell → master → keys
+    fn encrypt(plain: &[u8], seed: u64) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
+        // Random spell -> master -> keys
         let mut spell = [0u8; 64];
         OsRng.fill_bytes(&mut spell);
         let mut master = derive_master(&spell);
         let (mut enc_key, mut mac_key) = split_keys(&master);
 
         // AES-256-GCM with deterministic nonce
-        let cipher = Aes256Gcm::new_from_slice(&enc_key).expect("sadair: bad key");
+        let cipher = Aes256Gcm::new_from_slice(&enc_key).expect("aesgcm: bad key");
         let mut nonce = make_nonce(seed, &enc_key);
         let mut ct_stream = cipher
             .encrypt(Nonce::from_slice(&nonce), plain)
-            .expect("sadair: encryption failed");
+            .expect("aesgcm: encryption failed");
         // Note: `ct_stream` is ciphertext||tag(16)
 
         // MAC over raw GCM output
-        let mut tag32 = compute_mac(&ct_stream, &mac_key);
+        let tag32 = compute_mac(&ct_stream, &mac_key);
 
         // Obfuscate after MAC
         post_mutate(&mut ct_stream, seed, &enc_key);
@@ -164,7 +160,7 @@ impl Encryptor for Sadair {
             die();
         }
 
-        // Rebuild master → keys
+        // Rebuild master -> keys
         let mut master = unmask_key(frag, mask);
         let (mut enc_key, mut mac_key) = split_keys(&master);
 
@@ -187,9 +183,9 @@ impl Encryptor for Sadair {
         // AES-GCM decrypt with deterministic nonce
         let mut nonce = make_nonce(seed, &enc_key);
         let plain = Aes256Gcm::new_from_slice(&enc_key)
-            .expect("sadair: bad key")
+            .expect("aesgcm: bad key")
             .decrypt(Nonce::from_slice(&nonce), data.as_slice())
-            .expect("sadair: decryption failed");
+            .expect("aesgcm: decryption failed");
 
         // Hygiene
         enc_key.zeroize();
@@ -198,6 +194,6 @@ impl Encryptor for Sadair {
         nonce.zeroize();
 
         // Move into zeroizing wrapper
-        SecretStr(String::from_utf8(plain).expect("sadair: invalid UTF-8"))
+        SecretStr(String::from_utf8(plain).expect("aesgcm: invalid UTF-8"))
     }
 }

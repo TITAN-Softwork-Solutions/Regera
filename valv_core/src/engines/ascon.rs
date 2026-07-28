@@ -1,16 +1,16 @@
 #![doc = r#"
-# Absolut Engine (hardened, no_std)
+# Ascon Engine (hardened, no_std)
 
-**Absolut** is a stealth-biased engine using KMAC256 → master key, ASCON-AEAD128
+**Ascon** is a stealth-biased engine using KMAC256 -> master key, ASCON-AEAD128
 for encryption, and a keyed XOR obfuscation layer. Hardenings:
 
 - `no_std` (uses `alloc`)
-- KMAC256 → 32-byte `master`; split into `enc_key` (16B) + `mac_key` (32B via BLAKE3 DS)
+- KMAC256 -> 32-byte `master`; split into `enc_key` (16B) + `mac_key` (32B via BLAKE3 DS)
 - Deterministic 128-bit nonce = BLAKE3(enc_key || seed_u64)[..16]
 - MAC computed over **raw AEAD ciphertext** (pre-obfuscation)
 - Constant-time MAC verification (`subtle`)
 - Wider `seed: u64`
-- Key fragmentation + masking (32B master → 4×8 frag/mask)
+- Key fragmentation + masking (32B master -> 4x8 frag/mask)
 - Zeroization of all secret material; release abort on verify failure
 "#]
 
@@ -19,17 +19,17 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use ascon_aead::{AsconAead128, AsconAead128Key, AsconAead128Nonce};
 use ascon_aead::aead::{Aead, KeyInit, Payload};
-use blake3::{Hasher as B3Hasher, hash as bl3_hash};
+use ascon_aead::{AsconAead128, AsconAead128Key, AsconAead128Nonce};
+use blake3::{hash as bl3_hash, Hasher as B3Hasher};
 use rand::{rngs::OsRng, RngCore};
 use subtle::ConstantTimeEq;
-use tiny_keccak::{Kmac, Hasher};
+use tiny_keccak::{Hasher, Kmac};
 use zeroize::Zeroize;
 
 use crate::{Encryptor, SecretStr};
 
-pub struct Absolut;
+pub struct Ascon;
 
 /// Internal masked key container (32-byte master fragmented + masked)
 #[repr(C)]
@@ -65,7 +65,7 @@ fn unmask_key(frag: [[u8; 8]; 4], mask: [[u8; 8]; 4]) -> [u8; 32] {
 #[inline(always)]
 fn derive_master_kmac256(spell: &[u8], seed: u64) -> [u8; 32] {
     // KMAC256(key=domain, custom=seed_le) over random 64-byte spell
-    let domain = b"REGERA/ABSOLUT/KDF/v1";
+    let domain = b"VALV/ASCON/KDF/v1";
     let custom = seed.to_le_bytes();
     let mut kmac = Kmac::v256(domain, &custom);
     kmac.update(spell);
@@ -81,7 +81,7 @@ fn split_keys(master: &[u8; 32]) -> ([u8; 16], [u8; 32]) {
     enc.copy_from_slice(&master[..16]);
 
     // MAC key: domain-separated BLAKE3 keyed by master
-    let mac = blake3::keyed_hash(master, b"REGERA/ABS/MAC");
+    let mac = blake3::keyed_hash(master, b"VALV/ASCON/MAC");
     let mut mac_key = [0u8; 32];
     mac_key.copy_from_slice(mac.as_bytes());
     (enc, mac_key)
@@ -125,18 +125,15 @@ fn post_unmutate(data: &mut [u8], seed: u64, enc_key: &[u8; 16]) {
 #[inline(never)]
 fn die() -> ! {
     #[cfg(debug_assertions)]
-    panic!("REGERA/ABSOLUT: verification failed");
+    panic!("VALV/ASCON: verification failed");
     #[cfg(not(debug_assertions))]
-    unsafe { core::intrinsics::abort() }
+    crate::abort_or_panic("VALV/ASCON: verification failed")
 }
 
-impl Encryptor for Absolut {
+impl Encryptor for Ascon {
     #[inline(always)]
-    fn encrypt(
-        plain: &[u8],
-        seed: u64,
-    ) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
-        // Random spell → master
+    fn encrypt(plain: &[u8], seed: u64) -> (Vec<u8>, [u8; 32], [[u8; 8]; 4], [[u8; 8]; 4]) {
+        // Random spell -> master
         let mut spell = [0u8; 64];
         OsRng.fill_bytes(&mut spell);
         let mut master = derive_master_kmac256(&spell, seed);
@@ -146,11 +143,17 @@ impl Encryptor for Absolut {
         let cipher = AsconAead128::new(AsconAead128Key::from_slice(&enc_key));
         let mut nonce = make_nonce(seed, &enc_key);
         let mut ct_stream = cipher
-            .encrypt(AsconAead128Nonce::from_slice(&nonce), Payload { msg: plain, aad: &[] })
-            .expect("absolut: encryption failed");
+            .encrypt(
+                AsconAead128Nonce::from_slice(&nonce),
+                Payload {
+                    msg: plain,
+                    aad: &[],
+                },
+            )
+            .expect("ascon: encryption failed");
 
         // MAC over pre-obfuscated ciphertext
-        let mut tag = compute_mac(&ct_stream, &mac_key);
+        let tag = compute_mac(&ct_stream, &mac_key);
 
         // Obfuscate after MAC
         post_mutate(&mut ct_stream, seed, &enc_key);
@@ -205,9 +208,12 @@ impl Encryptor for Absolut {
         let plain = AsconAead128::new(AsconAead128Key::from_slice(&enc_key))
             .decrypt(
                 AsconAead128Nonce::from_slice(&nonce),
-                Payload { msg: &data, aad: &[] },
+                Payload {
+                    msg: &data,
+                    aad: &[],
+                },
             )
-            .expect("absolut: decryption failed");
+            .expect("ascon: decryption failed");
 
         // Hygiene
         enc_key.zeroize();
@@ -216,7 +222,7 @@ impl Encryptor for Absolut {
         nonce.zeroize();
 
         // Move into zeroizing SecretStr
-        let s = String::from_utf8(plain).expect("absolut: invalid UTF-8");
+        let s = String::from_utf8(plain).expect("ascon: invalid UTF-8");
         SecretStr(s)
     }
 }

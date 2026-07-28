@@ -1,36 +1,48 @@
 [package]
-name = "regera"
-version = "0.1.0"
+name = "valv"
+version = "2.0.0"
 edition = "2021"
+rust-version = "1.81"
 authors = ["Damon", "TITAN Softwork Solutions"]
-description = "Regera: Encrypted macro + runtime framework for compile-time string encryption"
+description = "Valv: Encrypted macro + runtime framework for compile-time string encryption"
 repository = "https://github.com/TITAN-Softwork-Solutions/Regera"
 readme = "README.md"
 keywords = ["crypto", "encryption", "macros", "framework"]
-categories = ["cryptography", "command-line-utilities"]
-license = "AGPL-3.0"
-license-file = "LICENSE"
+categories = ["cryptography", "development-tools"]
+license = "AGPL-3.0-only"
 exclude = ["/target", "**/target", ".gitignore", ".vscode", ".github"]
 
+[workspace]
+members = ["valv_core", "valv_macros", "valv_spec"]
+resolver = "2"
+
 [features]
-default = ["std", "jesko"]
-std = ["regera_core/std"]
-leaky_reveal = ["regera_core/leaky_reveal"]
-jesko = ["regera_core/jesko", "regera_macros/jesko"]
-absolut = ["regera_core/absolut", "regera_macros/absolut"]
-sadair = ["regera_core/sadair", "regera_macros/sadair"]
-gamera = ["regera_core/gamera", "regera_macros/gamera"]
-velar = ["regera_core/velar", "regera_macros/velar"]
+default = ["std", "chacha", "timing_guard"]
+std = ["valv_core/std"]
+leaky_reveal = ["valv_core/leaky_reveal"]
+timing_guard = ["std", "valv_core/timing_guard"]
+runtime_bound = ["valv_core/runtime_bound", "valv_macros/runtime_bound"]
+chacha = ["valv_core/chacha", "valv_macros/chacha"]
+ascon = ["valv_core/ascon", "valv_macros/ascon"]
+aesgcm = ["valv_core/aesgcm", "valv_macros/aesgcm"]
+xormask = ["valv_core/xormask", "valv_macros/xormask"]
+streammask = ["valv_core/streammask", "valv_macros/streammask"]
 
 [dependencies]
-regera_core = { path = "./regera_core", default-features = false }
-regera_macros = { path = "./regera_macros" }
+valv_core = { version = "2.0.0", path = "./valv_core", default-features = false }
+valv_macros = { version = "2.0.0", path = "./valv_macros" }
 
 [dev-dependencies]
-regera_core = { path = "./regera_core", default-features = false, features = ["std", "jesko", "absolut", "sadair", "gamera", "velar"] }
+valv_core = { version = "2.0.0", path = "./valv_core", default-features = false, features = ["std", "chacha", "ascon", "aesgcm", "xormask", "streammask"] }
 
 [package.metadata.docs.rs]
 all-features = true
 
 [lib]
 path = "./lib.rs"
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+panic = "abort"
