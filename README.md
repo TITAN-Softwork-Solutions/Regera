@@ -5,8 +5,8 @@
   <img src="https://img.shields.io/badge/Language-Rust-000000?logo=rust&logoColor=white&style=for-the-badge" />
   <img src="https://img.shields.io/badge/Category-Proc%20Macros-8A2BE2?style=for-the-badge" />
   <img src="https://img.shields.io/badge/License-AGPL--3.0-red?style=for-the-badge" />
-  <a href="https://titansoftwork.com">
-    <img src="https://img.shields.io/discord/1240608336005828668?label=TITAN%20Softworks&logo=discord&color=5865F2&style=for-the-badge" />
+  <a href="https://ryftenius.com">
+    <img src="https://img.shields.io/discord/1240608336005828668?label=RYFTENIUS%20Softworks&logo=discord&color=5865F2&style=for-the-badge" />
   </a>
 </p>
 

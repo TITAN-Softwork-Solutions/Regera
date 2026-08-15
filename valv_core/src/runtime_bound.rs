@@ -11,7 +11,7 @@ use zeroize::Zeroize;
 
 use crate::SecretStr;
 
-const KDF_CONTEXT: &str = "com.titansoftwork.valv.runtime-bound.v1";
+const KDF_CONTEXT: &str = "com.ryftenius.valv.runtime-bound.v1";
 const AAD: &[u8] = b"VALV/RUNTIME-BOUND/v1";
 
 /// Minimum accepted external key-material length for runtime-bound secrets.

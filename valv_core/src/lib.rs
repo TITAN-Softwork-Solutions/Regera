@@ -70,7 +70,7 @@ pub(crate) fn abort_or_panic(message: &'static str) -> ! {
 }
 
 /// Short license string for embedding/banners.
-pub const LICENSE: &str = "AGPL-3.0 (C) 2025 TITAN Softwork Solutions | VALV";
+pub const LICENSE: &str = "AGPL-3.0 (C) 2025 RYFTENIUS | VALV";
 
 /// All concrete engines live here (chacha, ascon, aesgcm, xormask, streammask).
 pub mod engines;
